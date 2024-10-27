@@ -1,150 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Queue Visualization</title>
-  <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background-color: #2b2b2b;
-      color: white;
-      font-family: Arial, sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Implementation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #222;
+            color: #eee;
+            height: 100vh;
+            margin: 0;
+            justify-content: center;
+        }
 
-    h1 {
-      margin-top: 20px;
-    }
+        .queue-container {
+            width: 300px;
+            height: 100px;
+            border: 2px solid #666;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
 
-    .queue-container {
-      display: flex;
-      align-items: center;
-      margin-top: 20px;
-    }
+        .queue-element {
+            width: 40px;
+            height: 80px;
+            background-color: #444;
+            color: #fff;
+            text-align: center;
+            line-height: 80px;
+            margin: 0 5px;
+            border-radius: 5px;
+            opacity: 0;
+            transform: translateX(-20px);
+            animation: slideIn 0.3s forwards;
+        }
 
-    .queue {
-      display: flex;
-      align-items: flex-end;
-      border: 2px solid white;
-      height: 100px;
-      width: 300px;
-      position: relative;
-    }
+        .queue-element.removing {
+            animation: slideOut 0.3s forwards;
+        }
 
-    .queue div {
-      width: 40px;
-      height: 0;
-      margin-right: 5px;
-      background-color: #4CAF50;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      color: white;
-      transition: height 0.3s ease;
-    }
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
 
-    .controls {
-      margin-top: 20px;
-    }
+        @keyframes slideOut {
+            to {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+        }
 
-    .controls button {
-      margin: 5px;
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
 
-    .in-out-labels {
-      display: flex;
-      justify-content: space-between;
-      width: 300px;
-      position: relative;
-      top: -20px;
-    }
+        button {
+            padding: 8px 12px;
+            background-color: #444;
+            color: #eee;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
 
-    .label {
-      font-size: 18px;
-      color: white;
-    }
-  </style>
+        button:hover {
+            background-color: #666;
+        }
+
+        .result {
+            margin-top: 15px;
+            font-size: 18px;
+        }
+
+        .label {
+            position: absolute;
+            top: -25px;
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .label.left {
+            left: 5px;
+        }
+
+        .label.right {
+            right: 5px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Queue Visualization</h1>
-  <div class="queue-container">
-    <div class="queue" id="queue"></div>
-  </div>
-  <div class="in-out-labels">
-    <span class="label">OUT</span>
-    <span class="label">IN</span>
-  </div>
-  <div class="controls">
-    <button onclick="dequeue()">dequeue()</button>
-    <button onclick="peek()">peek()</button>
-    <button onclick="isEmpty()">isEmpty()</button>
-    <button onclick="size()">size()</button>
-  </div>
-  <p id="result"></p>
+    <h1>Queues</h1>
+    <p>A queue is a data structure that can hold many elements.</p>
 
-  <script>
-    const queue = [];
-    const maxElements = 5;
-    let interval;
+    <div class="queue-container" id="queueContainer">
+        <div class="label left">OUT</div>
+        <div class="label right">IN</div>
+    </div>
 
-    function enqueue() {
-      if (queue.length < maxElements) {
-        const element = Math.floor(Math.random() * 9) + 1; // Random number for each element
-        queue.push(element);
-        updateQueueUI();
-      }
-    }
+    <div class="buttons">
+        <button onclick="enqueue()">enqueue()</button>
+        <button onclick="dequeue()">dequeue()</button>
+        <button onclick="peek()">peek()</button>
+        <button onclick="isEmpty()">isEmpty()</button>
+        <button onclick="size()">size()</button>
+    </div>
 
-    function dequeue() {
-      if (queue.length > 0) {
-        queue.shift();
-        updateQueueUI();
-      }
-    }
+    <div class="result" id="result"></div>
 
-    function peek() {
-      const result = queue.length > 0 ? queue[0] : "Queue is empty";
-      document.getElementById("result").innerText = "Peek: " + result;
-    }
+    <script>
+        let queue = [];
+        let nextValue = 1;
 
-    function isEmpty() {
-      document.getElementById("result").innerText = queue.length === 0 ? "Queue is empty" : "Queue is not empty";
-    }
+        function renderQueue() {
+            const queueContainer = document.getElementById('queueContainer');
+            queueContainer.innerHTML = '<div class="label left">OUT</div><div class="label right">IN</div>';
+            queue.forEach(value => {
+                const element = document.createElement('div');
+                element.className = 'queue-element';
+                element.innerText = value;
+                queueContainer.appendChild(element);
+            });
+        }
 
-    function size() {
-      document.getElementById("result").innerText = "Size: " + queue.length;
-    }
+        function enqueue() {
+            queue.push(nextValue++);
+            renderQueue();
+            document.getElementById('result').innerText = `Enqueued ${queue[queue.length - 1]}`;
+        }
 
-    function updateQueueUI() {
-      const queueContainer = document.getElementById("queue");
-      queueContainer.innerHTML = "";
+        function dequeue() {
+            if (queue.length === 0) {
+                document.getElementById('result').innerText = "Queue is empty. Cannot dequeue.";
+            } else {
+                // Add "removing" class to first element for slide-out animation
+                const queueContainer = document.getElementById('queueContainer');
+                const firstElement = queueContainer.children[2]; // Skipping the OUT label
+                firstElement.classList.add('removing');
 
-      queue.forEach(element => {
-        const div = document.createElement("div");
-        div.innerText = element;
-        div.style.height = "50px"; // Fixed height for all elements
-        queueContainer.appendChild(div);
-      });
-    }
+                // Wait for the animation to complete before actually removing the element
+                firstElement.addEventListener('animationend', () => {
+                    const value = queue.shift();
+                    renderQueue();
+                    document.getElementById('result').innerText = `Dequeued ${value}`;
+                }, { once: true });
+            }
+        }
 
-    // Start auto-enqueue at intervals
-    function startAutoEnqueue() {
-      interval = setInterval(enqueue, 1000); // Enqueue every 1 second
-    }
+        function peek() {
+            if (queue.length === 0) {
+                document.getElementById('result').innerText = "Queue is empty. Nothing to peek.";
+            } else {
+                const value = queue[0];
+                document.getElementById('result').innerText = `Front element is ${value}`;
+            }
+        }
 
-    // Stop auto-enqueue
-    function stopAutoEnqueue() {
-      clearInterval(interval);
-    }
+        function isEmpty() {
+            const empty = queue.length === 0;
+            document.getElementById('result').innerText = `Queue is ${empty ? "empty" : "not empty"}`;
+        }
 
-    // Initialize auto-enqueue on load
-    window.onload = startAutoEnqueue;
-  </script>
+        function size() {
+            const queueSize = queue.length;
+            document.getElementById('result').innerText = `Queue size is ${queueSize}`;
+        }
+    </script>
 </body>
 </html>
